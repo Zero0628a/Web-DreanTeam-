@@ -9,13 +9,18 @@ import { AuthModal } from "@/components/auth-modal"
 import type { User, Question } from "@/lib/types"
 import { CreateQuestionTab } from "./create-question-tab"
 
-export function MainApp() {
-  const [activeTab, setActiveTab] = useState<"home" | "create" | "solve" | "profile">("home")
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [showAuthModal, setShowAuthModal] = useState(false)
+type Tab = "home" | "create" | "solve" | "profile"
+const TAB_HOME: Tab = "home"
+const TAB_CREATE: Tab = "create"
+const TAB_SOLVE: Tab = "solve"
+const TAB_PROFILE: Tab = "profile"
 
-  // Usuario simulado
-  const [user, setUser] = useState<User>({
+const RESULT_CORRECT = "Correcto"
+const RESULT_INCORRECT = "Incorrecto"
+
+export function MainApp() {
+  const [activeTab, setActiveTab] = useState<Tab>(TAB_HOME)
+  const [user, setUser] = useState<User | null>({
     name: "Usuario Demo",
     email: "usuario@demo.com",
     stats: {
@@ -30,15 +35,18 @@ export function MainApp() {
       { name: "Detección de Incoherencias", progress: 80 },
     ],
     activities: [
-      { date: "2023-05-15", name: "Ordenar palabras", type: "Resolver", result: "Correcto" },
-      { date: "2023-05-14", name: "Detectar incoherencias", type: "Resolver", result: "Incorrecto" },
-      { date: "2023-05-12", name: "Dibujar un paisaje", type: "Crear", result: "Correcto" },
-      { date: "2023-05-10", name: "Ordenar figuras", type: "Resolver", result: "Correcto" },
-      { date: "2023-05-08", name: "Ordenar palabras", type: "Crear", result: "Correcto" },
+      { date: "2023-05-15", name: "Ordenar palabras", type: "Resolver", result: RESULT_CORRECT },
+      { date: "2023-05-14", name: "Detectar incoherencias", type: "Resolver", result: RESULT_INCORRECT },
+      { date: "2023-05-12", name: "Dibujar un paisaje", type: "Crear", result: RESULT_CORRECT },
+      { date: "2023-05-10", name: "Ordenar figuras", type: "Resolver", result: RESULT_CORRECT },
+      { date: "2023-05-08", name: "Ordenar palabras", type: "Crear", result: RESULT_CORRECT },
     ],
   })
+  const [showAuthModal, setShowAuthModal] = useState(false)
 
-  // Preguntas disponibles (simuladas)
+  // Usuario está logueado si user != null
+  const isLoggedIn = user !== null
+
   const [availableQuestions, setAvailableQuestions] = useState<Question[]>([
     {
       title: "Ordena las palabras para formar una oración",
@@ -63,61 +71,71 @@ export function MainApp() {
   ])
 
   const handleLogin = (userData: { name: string; email: string }) => {
-    setUser({
-      ...user,
+    setUser(prevUser => ({
+      ...prevUser,
       name: userData.name,
       email: userData.email,
-    })
-    setIsLoggedIn(true)
+    }) as User) // aseguramos tipo
     setShowAuthModal(false)
   }
 
   const handleLogout = () => {
-    setIsLoggedIn(false)
+    setUser(null)
   }
 
   const handleSaveQuestion = (newQuestion: Question) => {
-    setAvailableQuestions([...availableQuestions, newQuestion])
+    setAvailableQuestions(prevQuestions => {
+      if (prevQuestions.some(q => q.title === newQuestion.title)) {
+        alert("Ya existe una pregunta con ese título")
+        return prevQuestions
+      }
+      return [...prevQuestions, newQuestion]
+    })
 
-    // Incrementamos el contador de preguntas creadas
-    setUser({
-      ...user,
-      stats: {
-        ...user.stats,
-        created: user.stats.created + 1,
-      },
-      activities: [
-        {
-          date: new Date().toISOString().split("T")[0],
-          name: newQuestion.title,
-          type: "Crear",
-          result: "Correcto",
+    setUser(prevUser => {
+      if (!prevUser) return prevUser
+      return {
+        ...prevUser,
+        stats: {
+          ...prevUser.stats,
+          created: prevUser.stats.created + 1,
         },
-        ...user.activities,
-      ],
+        activities: [
+          {
+            date: new Date().toISOString().split("T")[0],
+            name: newQuestion.title,
+            type: "Crear",
+            result: RESULT_CORRECT,
+          },
+          ...prevUser.activities,
+        ],
+      }
     })
   }
 
   const handleQuestionSolved = (questionTitle: string, isCorrect: boolean) => {
-    if (isLoggedIn) {
-      setUser({
-        ...user,
+    if (!isLoggedIn) return
+
+    setUser(prevUser => {
+      if (!prevUser) return prevUser
+      return {
+        ...prevUser,
         stats: {
-          ...user.stats,
-          solved: isCorrect ? user.stats.solved + 1 : user.stats.solved,
-          score: isCorrect ? user.stats.score + 20 : user.stats.score,
+          ...prevUser.stats,
+          solved: isCorrect ? prevUser.stats.solved + 1 : prevUser.stats.solved,
+          score: isCorrect ? prevUser.stats.score + 20 : prevUser.stats.score,
         },
         activities: [
           {
             date: new Date().toISOString().split("T")[0],
             name: questionTitle,
             type: "Resolver",
-            result: isCorrect ? "Correcto" : "Incorrecto",
+            result: isCorrect ? RESULT_CORRECT : RESULT_INCORRECT,
           },
-          ...user.activities,
+          ...prevUser.activities,
         ],
-      })
-    }
+      }
+    })
   }
 
   return (
@@ -132,11 +150,11 @@ export function MainApp() {
       />
 
       <main className="container mx-auto px-4 py-8">
-        {activeTab === "home" && <HomeTab setActiveTab={setActiveTab} />}
+        {activeTab === TAB_HOME && <HomeTab setActiveTab={setActiveTab} />}
 
-        {activeTab === "create" && <CreateQuestionTab onSaveQuestion={handleSaveQuestion} />}
+        {activeTab === TAB_CREATE && <CreateQuestionTab onSaveQuestion={handleSaveQuestion} />}
 
-        {activeTab === "solve" && (
+        {activeTab === TAB_SOLVE && (
           <SolveQuestionsTab
             questions={availableQuestions}
             onQuestionSolved={handleQuestionSolved}
@@ -144,7 +162,7 @@ export function MainApp() {
           />
         )}
 
-        {activeTab === "profile" && (
+        {activeTab === TAB_PROFILE && (
           <ProfileTab isLoggedIn={isLoggedIn} user={user} onLogin={() => setShowAuthModal(true)} />
         )}
       </main>
