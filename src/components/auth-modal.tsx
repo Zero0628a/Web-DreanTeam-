@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -19,6 +18,8 @@ export function AuthModal({ onClose, onLogin }: AuthModalProps) {
     password: "",
     name: "",
   })
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target
@@ -28,17 +29,47 @@ export function AuthModal({ onClose, onLogin }: AuthModalProps) {
     })
   }
 
+  const validateEmail = (email: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+
   const handleAuth = () => {
-    // Aquí se manejaría la autenticación con un backend
-    // Para esta demo, simplemente simulamos un inicio de sesión exitoso
-    onLogin({
-      name: authForm.name || "Usuario Demo",
-      email: authForm.email,
-    })
+    const { email, password, name } = authForm
+
+    // Validaciones básicas
+    if (!email || !password || (authMode === "register" && !name)) {
+      setError("Todos los campos son obligatorios.")
+      return
+    }
+
+    if (!validateEmail(email)) {
+      setError("El correo no es válido.")
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    setTimeout(() => {
+      onLogin({
+        name: name || "Usuario Demo",
+        email,
+      })
+      setLoading(false)
+    }, 1000)
+  }
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if ((e.target as Element).id === "auth-modal-backdrop") {
+      onClose()
+    }
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div
+      id="auth-modal-backdrop"
+      onClick={handleBackdropClick}
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+    >
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-gray-800 dark:text-white">
@@ -64,6 +95,7 @@ export function AuthModal({ onClose, onLogin }: AuthModalProps) {
               onChange={handleInputChange}
               className="dark:bg-slate-700"
               placeholder="tu@email.com"
+              disabled={loading}
             />
           </div>
 
@@ -78,6 +110,7 @@ export function AuthModal({ onClose, onLogin }: AuthModalProps) {
               onChange={handleInputChange}
               className="dark:bg-slate-700"
               placeholder="********"
+              disabled={loading}
             />
           </div>
 
@@ -93,14 +126,25 @@ export function AuthModal({ onClose, onLogin }: AuthModalProps) {
                 onChange={handleInputChange}
                 className="dark:bg-slate-700"
                 placeholder="Tu nombre"
+                disabled={loading}
               />
             </div>
           )}
+
+          {error && <p className="text-red-500 text-sm">{error}</p>}
         </div>
 
         <div className="mt-6">
-          <Button onClick={handleAuth} className="w-full bg-teal-600 hover:bg-teal-700">
-            {authMode === "login" ? "Iniciar Sesión" : "Registrarse"}
+          <Button
+            onClick={handleAuth}
+            className="w-full bg-teal-600 hover:bg-teal-700"
+            disabled={loading}
+          >
+            {loading
+              ? "Procesando..."
+              : authMode === "login"
+              ? "Iniciar Sesión"
+              : "Registrarse"}
           </Button>
 
           <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
@@ -108,6 +152,7 @@ export function AuthModal({ onClose, onLogin }: AuthModalProps) {
             <button
               onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}
               className="text-teal-600 dark:text-teal-400 font-medium hover:underline ml-1"
+              disabled={loading}
             >
               {authMode === "login" ? "Regístrate" : "Inicia sesión"}
             </button>
