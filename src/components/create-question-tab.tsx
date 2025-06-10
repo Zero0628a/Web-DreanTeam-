@@ -1,10 +1,60 @@
 "use client"
 
 import { useState, useCallback, ChangeEvent, useMemo } from "react"
-import { TextCursorInput, Shapes, Pencil, FileSearch, Image, X, Plus } from "lucide-react"
+import { TextCursorInput, Shapes, Pencil, FileSearch, Image, X, Plus, Circle, Square, Triangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+
+// Tipos de figuras disponibles
+const SHAPE_TYPES = [
+  { id: 'circle', name: 'Círculo', icon: Circle, color: '#3B82F6' },
+  { id: 'square', name: 'Cuadrado', icon: Square, color: '#EF4444' },
+  { id: 'triangle', name: 'Triángulo', icon: Triangle, color: '#10B981' },
+  { id: 'rectangle', name: 'Rectángulo', color: '#F59E0B' },
+  { id: 'diamond', name: 'Rombo', color: '#8B5CF6' },
+  { id: 'pentagon', name: 'Pentágono', color: '#EC4899' },
+  { id: 'hexagon', name: 'Hexágono', color: '#06B6D4' },
+  { id: 'star', name: 'Estrella', color: '#F97316' }
+]
+
+// Componente para renderizar figuras SVG
+const ShapeRenderer = ({ shapeId, size = 40, color }: { shapeId: string, size?: number, color?: string }) => {
+  const shapeColor = color || SHAPE_TYPES.find(s => s.id === shapeId)?.color || '#6B7280'
+  
+  const shapes = {
+    circle: (
+      <circle cx={size/2} cy={size/2} r={size/2 - 2} fill={shapeColor} stroke="white" strokeWidth="2" />
+    ),
+    square: (
+      <rect x="2" y="2" width={size-4} height={size-4} fill={shapeColor} stroke="white" strokeWidth="2" />
+    ),
+    triangle: (
+      <polygon points={`${size/2},4 ${size-4},${size-4} 4,${size-4}`} fill={shapeColor} stroke="white" strokeWidth="2" />
+    ),
+    rectangle: (
+      <rect x="2" y="8" width={size-4} height={size-16} fill={shapeColor} stroke="white" strokeWidth="2" />
+    ),
+    diamond: (
+      <polygon points={`${size/2},4 ${size-4},${size/2} ${size/2},${size-4} 4,${size/2}`} fill={shapeColor} stroke="white" strokeWidth="2" />
+    ),
+    pentagon: (
+      <polygon points={`${size/2},4 ${size-4},${size/3} ${size-8},${size-4} 8,${size-4} 4,${size/3}`} fill={shapeColor} stroke="white" strokeWidth="2" />
+    ),
+    hexagon: (
+      <polygon points={`${size/4},6 ${size*3/4},6 ${size-4},${size/2} ${size*3/4},${size-6} ${size/4},${size-6} 4,${size/2}`} fill={shapeColor} stroke="white" strokeWidth="2" />
+    ),
+    star: (
+      <polygon points={`${size/2},4 ${size*0.6},${size*0.35} ${size-4},${size*0.35} ${size*0.7},${size*0.6} ${size*0.8},${size-4} ${size/2},${size*0.75} ${size*0.2},${size-4} ${size*0.3},${size*0.6} 4,${size*0.35} ${size*0.4},${size*0.35}`} fill={shapeColor} stroke="white" strokeWidth="2" />
+    )
+  }
+  
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {shapes[shapeId as keyof typeof shapes]}
+    </svg>
+  )
+}
 
 // Tipo actualizado para soportar múltiples respuestas
 interface Question {
@@ -12,6 +62,7 @@ interface Question {
   description: string
   type: "order-words" | "order-shapes" | "drawing" | "incoherence"
   words: string[]
+  shapes: { id: string, name: string, color: string }[] // Nueva propiedad para figuras
   correctOrders: string[] // Cambio: ahora es un array de respuestas correctas
   incoherentText: string
   correctText: string
@@ -30,6 +81,7 @@ export function CreateQuestionTab({ onSaveQuestion }: CreateQuestionTabProps) {
     description: "",
     type: "order-words",
     words: [],
+    shapes: [], // Nueva propiedad inicializada
     correctOrders: [""], // Cambio: inicializar con un array con una respuesta vacía
     incoherentText: "",
     correctText: "",
@@ -39,6 +91,7 @@ export function CreateQuestionTab({ onSaveQuestion }: CreateQuestionTabProps) {
   })
 
   const [newWordInput, setNewWordInput] = useState("")
+  const [selectedShapeType, setSelectedShapeType] = useState(SHAPE_TYPES[0])
   const [mensaje, setMensaje] = useState("")
 
   // Corregir la validación usando useMemo para mejor rendimiento
@@ -64,13 +117,26 @@ export function CreateQuestionTab({ onSaveQuestion }: CreateQuestionTabProps) {
       return hasValidOrder
     }
     
+    if (newQuestion.type === "order-shapes") {
+      // Validar que hay al menos 3 figuras
+      if (newQuestion.shapes.length < 3) {
+        console.log('Faltan figuras, actual:', newQuestion.shapes.length)
+        return false
+      }
+      
+      // Validar que hay al menos una respuesta correcta válida (no vacía)
+      const hasValidOrder = newQuestion.correctOrders.some(order => order.trim().length > 0)
+      console.log('Tiene orden válido:', hasValidOrder, newQuestion.correctOrders)
+      return hasValidOrder
+    }
+    
     if (newQuestion.type === "incoherence") {
       const isValid = newQuestion.incoherentText.trim().length > 0 && newQuestion.correctText.trim().length > 0
       console.log('Validación incoherence:', isValid)
       return isValid
     }
     
-    if (newQuestion.type === "order-shapes" || newQuestion.type === "drawing") {
+    if (newQuestion.type === "drawing") {
       // Para estos tipos, solo validamos título y descripción
       return true
     }
@@ -94,6 +160,27 @@ export function CreateQuestionTab({ onSaveQuestion }: CreateQuestionTabProps) {
       const updatedWords = [...prev.words]
       updatedWords.splice(index, 1)
       return { ...prev, words: updatedWords }
+    })
+  }, [])
+
+  // Nuevas funciones para manejar figuras
+  const addShape = useCallback(() => {
+    // Removemos la validación de duplicados para permitir figuras repetidas
+    setNewQuestion((prev) => ({
+      ...prev,
+      shapes: [...prev.shapes, { 
+        id: selectedShapeType.id, 
+        name: selectedShapeType.name, 
+        color: selectedShapeType.color 
+      }],
+    }))
+  }, [selectedShapeType])
+
+  const removeShape = useCallback((index: number) => {
+    setNewQuestion((prev) => {
+      const updatedShapes = [...prev.shapes]
+      updatedShapes.splice(index, 1)
+      return { ...prev, shapes: updatedShapes }
     })
   }, [])
 
@@ -141,6 +228,12 @@ export function CreateQuestionTab({ onSaveQuestion }: CreateQuestionTabProps) {
         } else if (!newQuestion.correctOrders.some(order => order.trim().length > 0)) {
           errorMessage = "Se necesita al menos una respuesta correcta."
         }
+      } else if (newQuestion.type === "order-shapes") {
+        if (newQuestion.shapes.length < 3) {
+          errorMessage = "Se necesitan al menos 3 figuras para ordenar."
+        } else if (!newQuestion.correctOrders.some(order => order.trim().length > 0)) {
+          errorMessage = "Se necesita al menos una respuesta correcta."
+        }
       } else if (newQuestion.type === "incoherence") {
         if (!newQuestion.incoherentText.trim()) {
           errorMessage = "El texto con incoherencias es requerido."
@@ -170,6 +263,7 @@ export function CreateQuestionTab({ onSaveQuestion }: CreateQuestionTabProps) {
         description: "",
         type: "order-words",
         words: [],
+        shapes: [],
         correctOrders: [""],
         incoherentText: "",
         correctText: "",
@@ -251,8 +345,6 @@ export function CreateQuestionTab({ onSaveQuestion }: CreateQuestionTabProps) {
             {[
               { key: "order-words", icon: <TextCursorInput size={24} />, title: "Ordenar Palabras" },
               { key: "order-shapes", icon: <Shapes size={24} />, title: "Ordenar Figuras" },
-              { key: "drawing", icon: <Pencil size={24} />, title: "Dibujar" },
-              { key: "incoherence", icon: <FileSearch size={24} />, title: "Detectar Incoherencias" },
             ].map(({ key, icon, title }) => (
               <div
                 key={key}
@@ -262,7 +354,8 @@ export function CreateQuestionTab({ onSaveQuestion }: CreateQuestionTabProps) {
                     type: key as Question["type"],
                     // Limpiar campos específicos cuando cambie el tipo
                     words: key === "order-words" ? prev.words : [],
-                    correctOrders: key === "order-words" ? prev.correctOrders : [""],
+                    shapes: key === "order-shapes" ? prev.shapes : [],
+                    correctOrders: [""],
                     incoherentText: key === "incoherence" ? prev.incoherentText : "",
                     correctText: key === "incoherence" ? prev.correctText : ""
                   }))
@@ -350,7 +443,7 @@ export function CreateQuestionTab({ onSaveQuestion }: CreateQuestionTabProps) {
                       <Input
                         value={order}
                         onChange={(e) => updateCorrectOrder(index, e.target.value)}
-                        placeholder={Respuesta correcta ${index + 1}}
+                        placeholder={`Respuesta correcta ${index + 1}`}
                         className={!order.trim() && index === 0 ? "border-red-300" : ""}
                       />
                     </div>
@@ -371,6 +464,121 @@ export function CreateQuestionTab({ onSaveQuestion }: CreateQuestionTabProps) {
               
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                 Puedes agregar múltiples respuestas correctas. El estudiante puede responder con cualquiera de ellas.
+              </p>
+            </div>
+          </>
+        )}
+
+        {newQuestion.type === "order-shapes" && (
+          <>
+            <div className="mb-4">
+              <label className="block mb-2 font-medium">
+                Figuras para ordenar * 
+                <span className="text-sm text-gray-500">(mínimo 3 figuras)</span>
+              </label>
+              
+              {/* Selector de tipo de figura */}
+              <div className="mb-4">
+                <label className="block mb-2 text-sm font-medium">Seleccionar figura:</label>
+                <div className="grid grid-cols-4 md:grid-cols-8 gap-2 mb-3">
+                  {SHAPE_TYPES.map((shapeType) => {
+                    const IconComponent = shapeType.icon
+                    return (
+                      <div
+                        key={shapeType.id}
+                        onClick={() => setSelectedShapeType(shapeType)}
+                        className={`border rounded-lg p-2 cursor-pointer transition-colors flex flex-col items-center gap-1 ${
+                          selectedShapeType.id === shapeType.id 
+                            ? "border-teal-500 bg-teal-50 dark:bg-teal-900/20" 
+                            : "border-gray-300 dark:border-gray-600 hover:border-teal-300"
+                        }`}
+                      >
+                        {IconComponent ? (
+                          <IconComponent size={24} style={{ color: shapeType.color }} />
+                        ) : (
+                          <ShapeRenderer shapeId={shapeType.id} size={24} />
+                        )}
+                        <span className="text-xs text-center">{shapeType.name}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+                
+                <Button 
+                  onClick={addShape}
+                  className="bg-teal-600 hover:bg-teal-700"
+                >
+                  Añadir {selectedShapeType.name}
+                </Button>
+              </div>
+
+              {/* Figuras añadidas */}
+              <div className="flex gap-2 flex-wrap mb-2">
+                {newQuestion.shapes.map((shape, i) => (
+                  <div key={i} className="bg-teal-100 dark:bg-teal-800 px-3 py-2 rounded flex items-center gap-2">
+                    <ShapeRenderer shapeId={shape.id} size={20} />
+                    <span className="text-sm">{shape.name}</span>
+                    <button onClick={() => removeShape(i)} className="ml-1 text-red-500 hover:text-red-700">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              
+              {newQuestion.shapes.length < 3 && (
+                <p className="text-sm text-orange-600 mt-1">
+                  Figuras agregadas: {newQuestion.shapes.length}/3 (mínimo)
+                </p>
+              )}
+            </div>
+
+            {/* Sección para múltiples respuestas correctas de figuras */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <label className="block font-medium">
+                  Respuestas Correctas *
+                  <span className="text-sm text-gray-500">(al menos una)</span>
+                </label>
+                <Button
+                  type="button"
+                  onClick={addCorrectOrder}
+                  size="sm"
+                  variant="outline"
+                  className="flex items-center gap-1"
+                >
+                  <Plus size={16} />
+                  Agregar Respuesta
+                </Button>
+              </div>
+              
+              <div className="space-y-3">
+                {newQuestion.correctOrders.map((order, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <div className="flex-1">
+                      <Input
+                        value={order}
+                        onChange={(e) => updateCorrectOrder(index, e.target.value)}
+                        placeholder={`Ej: Círculo, Cuadrado, Triángulo (respuesta ${index + 1})`}
+                        className={!order.trim() && index === 0 ? "border-red-300" : ""}
+                      />
+                    </div>
+                    {newQuestion.correctOrders.length > 1 && (
+                      <Button
+                        type="button"
+                        onClick={() => removeCorrectOrder(index)}
+                        size="sm"
+                        variant="outline"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <X size={16} />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                Especifica el orden correcto usando los nombres de las figuras. Puedes agregar múltiples respuestas correctas.
               </p>
             </div>
           </>
@@ -468,6 +676,12 @@ export function CreateQuestionTab({ onSaveQuestion }: CreateQuestionTabProps) {
             {newQuestion.type === "order-words" && (
               <>
                 <p>Palabras: {newQuestion.words.length}/3 {newQuestion.words.length >= 3 ? "✅" : "❌"}</p>
+                <p>Respuestas: {newQuestion.correctOrders.filter(o => o.trim()).length > 0 ? "✅" : "❌"}</p>
+              </>
+            )}
+            {newQuestion.type === "order-shapes" && (
+              <>
+                <p>Figuras: {newQuestion.shapes.length}/3 {newQuestion.shapes.length >= 3 ? "✅" : "❌"}</p>
                 <p>Respuestas: {newQuestion.correctOrders.filter(o => o.trim()).length > 0 ? "✅" : "❌"}</p>
               </>
             )}
