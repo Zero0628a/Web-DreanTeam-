@@ -68,48 +68,46 @@ export function SolveQuestionsTab({
     setUserAnswers(newUserAnswers);
   };
 
-  const checkAnswer = (questionIndex: number) => {
-    const question = questions[questionIndex];
+const checkAnswer = (questionIndex: number) => {
+  const question = questions[questionIndex];
 
-    if (question.type === "order-words") {
-      // Construimos la respuesta del usuario
-      const userAnswer = selectedWords[questionIndex].join(" ");
+  if (question.type === "order-words" || question.type === "order-shapes") {
+    const userAnswer = selectedWords[questionIndex].join(" ");
 
-      // Comparamos con la respuesta correcta
-      const isCorrect =
-        userAnswer.toLowerCase() === question.correctOrder.toLowerCase();
+    const isCorrect = question.correctOrders.some(
+      (validOrder) =>
+        userAnswer.trim().toLowerCase() === validOrder.trim().toLowerCase()
+    );
 
-      const newQuestionFeedback = [...questionFeedback];
-      newQuestionFeedback[questionIndex] = {
-        correct: isCorrect,
-        message: isCorrect
-          ? question.feedbackCorrect
-          : question.feedbackIncorrect,
-      };
-      setQuestionFeedback(newQuestionFeedback);
+    const newQuestionFeedback = [...questionFeedback];
+    newQuestionFeedback[questionIndex] = {
+      correct: isCorrect,
+      message: isCorrect
+        ? question.feedbackCorrect
+        : question.feedbackIncorrect,
+    };
+    setQuestionFeedback(newQuestionFeedback);
 
-      // Notificamos al componente padre
-      onQuestionSolved(question.title, isCorrect);
-    } else if (question.type === "incoherence") {
-      // Comparamos la respuesta del usuario con la correcta
-      // Aquí podríamos usar un algoritmo más sofisticado para comparar textos
-      const isCorrect =
-        userAnswers[questionIndex].toLowerCase().includes("salta") &&
-        userAnswers[questionIndex].toLowerCase().includes("suena");
+    onQuestionSolved(question.title, isCorrect);
+  }
 
-      const newQuestionFeedback = [...questionFeedback];
-      newQuestionFeedback[questionIndex] = {
-        correct: isCorrect,
-        message: isCorrect
-          ? question.feedbackCorrect
-          : question.feedbackIncorrect,
-      };
-      setQuestionFeedback(newQuestionFeedback);
+  if (question.type === "incoherence") {
+    const isCorrect =
+      userAnswers[questionIndex].toLowerCase().includes("salta") &&
+      userAnswers[questionIndex].toLowerCase().includes("suena");
 
-      // Notificamos al componente padre
-      onQuestionSolved(question.title, isCorrect);
-    }
-  };
+    const newQuestionFeedback = [...questionFeedback];
+    newQuestionFeedback[questionIndex] = {
+      correct: isCorrect,
+      message: isCorrect
+        ? question.feedbackCorrect
+        : question.feedbackIncorrect,
+    };
+    setQuestionFeedback(newQuestionFeedback);
+
+    onQuestionSolved(question.title, isCorrect);
+  }
+};
 
   const clearCanvas = () => {
     const canvas = document.querySelector("canvas");
@@ -250,6 +248,25 @@ export function SolveQuestionsTab({
     );
   }
 
+  const renderShapeSVG = (shapeId: string) => {
+  switch (shapeId) {
+    case "circle":
+      return <circle cx="20" cy="20" r="18" fill="#3B82F6" stroke="white" strokeWidth="2" />;
+    case "square":
+      return <rect x="4" y="4" width="32" height="32" fill="#EF4444" stroke="white" strokeWidth="2" />;
+    case "triangle":
+      return <polygon points="20,4 36,36 4,36" fill="#10B981" stroke="white" strokeWidth="2" />;
+    case "rectangle":
+      return <rect x="4" y="10" width="32" height="20" fill="#F59E0B" stroke="white" strokeWidth="2" />;
+    case "diamond":
+      return <polygon points="20,4 36,20 20,36 4,20" fill="#8B5CF6" stroke="white" strokeWidth="2" />;
+    case "pentagon":
+      return <polygon points="20,4 36,16 30,36 10,36 4,16" fill="#EC4899" stroke="white" strokeWidth="2" />;
+    default:
+      return null;
+  }
+};
+
   return (
     <div className="max-w-4xl mx-auto">
       <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">
@@ -374,6 +391,63 @@ export function SolveQuestionsTab({
                   </div>
                 </div>
               )}
+
+{question.type === "order-shapes" && (
+  <div className="mb-6">
+    <div className="bg-gray-100 dark:bg-slate-700 p-4 rounded-lg mb-4">
+      <p className="text-gray-700 dark:text-gray-300 mb-2 font-medium">
+        Figuras disponibles:
+      </p>
+      <div className="flex flex-wrap gap-3 mb-4 min-h-[60px]">
+        {shuffledWords[index]?.map((shapeId, i) => (
+          <div
+            key={i}
+            draggable
+            onDragStart={() => handleDragStart(index, shapeId, "available", i)}
+            className="w-14 h-14 cursor-move"
+          >
+            <svg width="100%" height="100%" viewBox="0 0 40 40">
+              {renderShapeSVG(shapeId)}
+            </svg>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-gray-700 dark:text-gray-300 mb-2 font-medium">
+        Tu respuesta:
+      </p>
+      <div
+        className="bg-white dark:bg-slate-800 p-3 rounded-lg border-2 min-h-[70px] flex flex-wrap gap-3"
+        onDragOver={(e) => handleDragOver(e, index)}
+        onDragLeave={handleDragLeave}
+        onDrop={(e) => handleDrop(e, index)}
+      >
+        {selectedWords[index]?.map((shapeId, shapeIndex) => (
+          <div
+    key={shapeIndex}
+    title={SHAPE_TYPES.find(s => s.id === shapeId)?.name || shapeId} // 👈 AÑADIDO AQUÍ
+    draggable
+    onDragStart={() =>
+      handleDragStart(index, shapeId, "selected", shapeIndex)
+    }
+    className="w-14 h-14 relative cursor-move group"
+  >
+    <svg width="100%" height="100%" viewBox="0 0 40 40">
+      {renderShapeSVG(shapeId)}
+    </svg>
+    <button
+      onClick={() => handleReturnWord(index, shapeIndex)}
+      className="absolute top-0 right-0 text-red-600 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+    >
+      <XCircle size={14} />
+    </button>
+  </div>
+))}
+
+      </div>
+    </div>
+  </div>
+)}
 
               {/* Componente para dibujar */}
               {question.type === "drawing" && (
