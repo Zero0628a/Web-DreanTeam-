@@ -101,7 +101,8 @@ const checkAnswer = (questionIndex: number) => {
       correct: isCorrect,
       message: isCorrect
         ? question.feedbackCorrect
-        : question.feedbackIncorrect,
+        : question.feedbackIncorrect,    
+
     };
     setQuestionFeedback(newQuestionFeedback);
 
@@ -204,6 +205,8 @@ const checkAnswer = (questionIndex: number) => {
     setSelectedWords(newSelectedWords);
   };
 
+
+
   if (questions.length === 0) {
     return (
       <div className="max-w-4xl mx-auto">
@@ -286,6 +289,24 @@ const checkAnswer = (questionIndex: number) => {
               <p className="text-gray-600 dark:text-gray-300 mb-4">
                 {question.description}
               </p>
+
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
+              {question.title}
+                </h3>
+
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                  {question.description}
+                </p>
+
+                <div className="flex justify-end mb-2">
+                  <Button
+                    variant="outline"
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                    onClick={() => handleEditQuestion(index)}
+                  >
+                    Editar Pregunta
+                  </Button>
+                </div>
 
               {question.image && (
                 <div className="mb-4">
