@@ -23,7 +23,7 @@ const SHAPE_TYPES = [
 interface SolveQuestionsTabProps {
   questions: Question[];
   onQuestionSolved: (questionTitle: string, isCorrect: boolean) => void;
-  onQuestionUpdated: (questionIndex: number, updatedQuestion: Question) => void; // Nueva prop
+  onQuestionUpdated: (questionIndex: number, updatedQuestion: Question) => void;
   setActiveTab: (tab: "home" | "create" | "solve" | "profile") => void;
 }
 
@@ -37,7 +37,7 @@ export function SolveQuestionsTab({
   const [selectedWords, setSelectedWords] = useState<string[][]>([]);
   const [userAnswers, setUserAnswers] = useState<string[]>([]);
   const [questionFeedback, setQuestionFeedback] = useState<
-    { correct: boolean; message: string }[]
+    ({ correct: boolean; message: string } | null)[]
   >([]);
   const [draggedWord, setDraggedWord] = useState<{
     questionIndex: number;
@@ -59,11 +59,11 @@ export function SolveQuestionsTab({
     const newShuffledWords: string[][] = [];
     const newSelectedWords: string[][] = [];
     const newUserAnswers: string[] = [];
-    const newQuestionFeedback: { correct: boolean; message: string }[] = [];
+    const newQuestionFeedback: ({ correct: boolean; message: string } | null)[] = [];
 
     questions.forEach((question, index) => {
       if (question.type === "order-words" || question.type === "order-shapes") {
-        newShuffledWords[index] = [...question.words].sort(
+        newShuffledWords[index] = [...(question.words || [])].sort(
           () => Math.random() - 0.5
         );
         newSelectedWords[index] = [];
@@ -87,14 +87,14 @@ export function SolveQuestionsTab({
 
   // Funciones de edición
   const handleEditQuestion = (index: number) => {
-  const questionToEdit = questions[index];
-  setEditingIndex(index);
-  setEditForm({
-    ...questionToEdit,
-    correctOrders: questionToEdit.correctOrders ?? [],
-    words: questionToEdit.words ?? [],
-  });
-};
+    const questionToEdit = questions[index];
+    setEditingIndex(index);
+    setEditForm({
+      ...questionToEdit,
+      correctOrders: questionToEdit.correctOrders ?? [],
+      words: questionToEdit.words ?? [],
+    });
+  };
 
   const handleCancelEdit = () => {
     setEditingIndex(null);
@@ -103,11 +103,57 @@ export function SolveQuestionsTab({
 
   const handleSaveEdit = () => {
     if (editForm && editingIndex !== null) {
-      onQuestionUpdated(editingIndex, editForm);
+      // Validar que los campos requeridos estén completos
+      if (!editForm.title?.trim()) {
+        alert("El título es requerido");
+        return;
+      }
+      
+      if (!editForm.description?.trim()) {
+        alert("La descripción es requerida");
+        return;
+      }
+
+      // Validaciones específicas por tipo
+      if (editForm.type === "order-words" || editForm.type === "order-shapes") {
+        if (!editForm.words || editForm.words.length === 0 || editForm.words.some(w => !w.trim())) {
+          alert(`Las ${editForm.type === "order-words" ? "palabras" : "formas"} son requeridas y no pueden estar vacías`);
+          return;
+        }
+        
+        if (!editForm.correctOrders || editForm.correctOrders.length === 0 || editForm.correctOrders.some(o => !o.trim())) {
+          alert("Al menos una respuesta correcta es requerida y no puede estar vacía");
+          return;
+        }
+      }
+
+      if (editForm.type === "incoherence") {
+        if (!editForm.incoherentText?.trim()) {
+          alert("El texto con incoherencia es requerido");
+          return;
+        }
+      }
+
+      // Limpiar la pregunta editada
+      const cleanedForm = {
+        ...editForm,
+        title: editForm.title.trim(),
+        description: editForm.description.trim(),
+        words: editForm.words?.map(w => w.trim()).filter(w => w) || [],
+        correctOrders: editForm.correctOrders?.map(o => o.trim()).filter(o => o) || [],
+        incoherentText: editForm.incoherentText?.trim() || "",
+        feedbackCorrect: editForm.feedbackCorrect?.trim() || "¡Correcto!",
+        feedbackIncorrect: editForm.feedbackIncorrect?.trim() || "Incorrecto, inténtalo de nuevo.",
+      };
+
+      onQuestionUpdated(editingIndex, cleanedForm);
       setEditingIndex(null);
       setEditForm(null);
-      // Reinicializar el estado para la pregunta editada
-      initializeQuestionState();
+      
+      // Reinicializar el estado para todas las preguntas
+      setTimeout(() => {
+        initializeQuestionState();
+      }, 100);
     }
   };
 
@@ -118,10 +164,10 @@ export function SolveQuestionsTab({
   };
 
   const addWordToEditForm = () => {
-    if (editForm && editForm.words) {
+    if (editForm) {
       setEditForm({
         ...editForm,
-        words: [...editForm.words, ""]
+        words: [...(editForm.words || []), ""]
       });
     }
   };
@@ -148,10 +194,10 @@ export function SolveQuestionsTab({
   };
 
   const addCorrectOrderToEditForm = () => {
-    if (editForm && editForm.correctOrders) {
+    if (editForm) {
       setEditForm({
         ...editForm,
-        correctOrders: [...editForm.correctOrders, ""]
+        correctOrders: [...(editForm.correctOrders || []), ""]
       });
     }
   };
@@ -181,19 +227,29 @@ export function SolveQuestionsTab({
     const question = questions[questionIndex];
 
     if (question.type === "order-words" || question.type === "order-shapes") {
-      const userAnswer = selectedWords[questionIndex].join(" ");
+      const userAnswer = selectedWords[questionIndex]?.join(" ") || "";
 
-      const isCorrect = question.correctOrders.some(
+      if (!userAnswer.trim()) {
+        const newQuestionFeedback = [...questionFeedback];
+        newQuestionFeedback[questionIndex] = {
+          correct: false,
+          message: "Por favor, ordena las palabras antes de comprobar la respuesta.",
+        };
+        setQuestionFeedback(newQuestionFeedback);
+        return;
+      }
+
+      const isCorrect = question.correctOrders?.some(
         (validOrder) =>
           userAnswer.trim().toLowerCase() === validOrder.trim().toLowerCase()
-      );
+      ) || false;
 
       const newQuestionFeedback = [...questionFeedback];
       newQuestionFeedback[questionIndex] = {
         correct: isCorrect,
         message: isCorrect
-          ? question.feedbackCorrect
-          : question.feedbackIncorrect,
+          ? question.feedbackCorrect || "¡Correcto!"
+          : question.feedbackIncorrect || "Incorrecto, inténtalo de nuevo.",
       };
       setQuestionFeedback(newQuestionFeedback);
 
@@ -201,20 +257,43 @@ export function SolveQuestionsTab({
     }
 
     if (question.type === "incoherence") {
-      const isCorrect =
-        userAnswers[questionIndex].toLowerCase().includes("salta") &&
-        userAnswers[questionIndex].toLowerCase().includes("suena");
+      const userAnswer = userAnswers[questionIndex]?.toLowerCase() || "";
+      
+      if (!userAnswer.trim()) {
+        const newQuestionFeedback = [...questionFeedback];
+        newQuestionFeedback[questionIndex] = {
+          correct: false,
+          message: "Por favor, escribe tu respuesta antes de comprobar.",
+        };
+        setQuestionFeedback(newQuestionFeedback);
+        return;
+      }
+
+      // Validación mejorada para incoherencias
+      const isCorrect = userAnswer.includes("salta") && userAnswer.includes("suena");
 
       const newQuestionFeedback = [...questionFeedback];
       newQuestionFeedback[questionIndex] = {
         correct: isCorrect,
         message: isCorrect
-          ? question.feedbackCorrect
-          : question.feedbackIncorrect,
+          ? question.feedbackCorrect || "¡Correcto!"
+          : question.feedbackIncorrect || "Incorrecto, inténtalo de nuevo.",
       };
       setQuestionFeedback(newQuestionFeedback);
 
       onQuestionSolved(question.title, isCorrect);
+    }
+
+    if (question.type === "drawing") {
+      // Para dibujos, siempre consideramos correcto si hay algo dibujado
+      const newQuestionFeedback = [...questionFeedback];
+      newQuestionFeedback[questionIndex] = {
+        correct: true,
+        message: question.feedbackCorrect || "¡Excelente dibujo!",
+      };
+      setQuestionFeedback(newQuestionFeedback);
+
+      onQuestionSolved(question.title, true);
     }
   };
 
@@ -222,7 +301,9 @@ export function SolveQuestionsTab({
     const canvas = document.querySelector("canvas");
     if (canvas) {
       const ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
     }
   };
 
@@ -456,7 +537,7 @@ export function SolveQuestionsTab({
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           {editForm.type === "order-words" ? "Palabras" : "Formas"}
                         </label>
-                        {editForm.words.map((word, wordIndex) => (
+                        {(editForm.words || []).map((word, wordIndex) => (
                           <div key={wordIndex} className="flex gap-2 mb-2">
                             {editForm.type === "order-words" ? (
                               <Input
@@ -507,24 +588,23 @@ export function SolveQuestionsTab({
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Respuestas correctas
                         </label>
-                        {Array.isArray(editForm?.correctOrders) &&
-                          editForm.correctOrders.map((order, orderIndex) => (
-                            <div key={orderIndex} className="flex gap-2 mb-2">
-                              <Input
-                                value={order}
-                                onChange={(e) => updateCorrectOrderInEditForm(orderIndex, e.target.value)}
-                                className="dark:bg-slate-700"
-                                placeholder="Orden correcto (ej: palabra1 palabra2 palabra3)"
-                              />
-                              <Button
-                                onClick={() => removeCorrectOrderFromEditForm(orderIndex)}
-                                variant="outline"
-                                size="sm"
-                                className="text-red-600"
-                              >
-                                <Trash2 size={16} />
-                              </Button>
-                            </div>
+                        {(editForm?.correctOrder || []).map((order, orderIndex) => (
+                          <div key={orderIndex} className="flex gap-2 mb-2">
+                            <Input
+                              value={order}
+                              onChange={(e) => updateCorrectOrderInEditForm(orderIndex, e.target.value)}
+                              className="dark:bg-slate-700"
+                              placeholder="Orden correcto (ej: palabra1 palabra2 palabra3)"
+                            />
+                            <Button
+                              onClick={() => removeCorrectOrderFromEditForm(orderIndex)}
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
                         ))}
                         <Button
                           onClick={addCorrectOrderToEditForm}
@@ -611,7 +691,7 @@ export function SolveQuestionsTab({
                     </div>
                   )}
 
-                  {/* Componente para ordenar palabras */}
+                 {/* Componente para ordenar palabras */}
                   {question.type === "order-words" && (
                     <div className="mb-6">
                       <div className="bg-gray-100 dark:bg-slate-700 p-4 rounded-lg mb-4">
@@ -665,29 +745,6 @@ export function SolveQuestionsTab({
                             </div>
                           ))}
                         </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Componente para detectar incoherencias */}
-                  {question.type === "incoherence" && (
-                    <div className="mb-6">
-                      <div className="bg-gray-100 dark:bg-slate-700 p-4 rounded-lg mb-4">
-                        <p className="text-gray-800 dark:text-gray-200 mb-3">
-                          {question.incoherentText}
-                        </p>
-                        <label className="block text-gray-700 dark:text-gray-200 font-medium mb-2">
-                          Corrige la oración:
-                        </label>
-                        <Textarea
-                          value={userAnswers[index] || ""}
-                          onChange={(e) =>
-                            handleUserAnswerChange(index, e.target.value)
-                          }
-                          rows={3}
-                          className="dark:bg-slate-700"
-                          placeholder="Escribe la versión corregida"
-                        />
                       </div>
                     </div>
                   )}
