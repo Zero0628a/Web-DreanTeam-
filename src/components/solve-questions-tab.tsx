@@ -588,7 +588,7 @@ export function SolveQuestionsTab({
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Respuestas correctas
                         </label>
-                        {(editForm?.correctOrder || []).map((order, orderIndex) => (
+                        {(editForm?.correctOrders || []).map((order, orderIndex) => (
                           <div key={orderIndex} className="flex gap-2 mb-2">
                             <Input
                               value={order}
