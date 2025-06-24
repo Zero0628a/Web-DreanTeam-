@@ -18,7 +18,6 @@ const TAB_PROFILE: Tab = "profile"
 const RESULT_CORRECT = "Correcto"
 const RESULT_INCORRECT = "Incorrecto"
 
-
 export function MainApp() {
   const [activeTab, setActiveTab] = useState<Tab>(TAB_HOME)
   const [user, setUser] = useState<User | null>({
@@ -43,9 +42,8 @@ export function MainApp() {
       { date: "2023-05-08", name: "Ordenar palabras", type: "Crear", result: RESULT_CORRECT },
     ],
   })
-  const [showAuthModal, setShowAuthModal] = useState(false)
 
-  // Usuario está logueado si user != null
+  const [showAuthModal, setShowAuthModal] = useState(false)
   const isLoggedIn = user !== null
 
   const [availableQuestions, setAvailableQuestions] = useState<Question[]>([
@@ -76,7 +74,7 @@ export function MainApp() {
       ...prevUser,
       name: userData.name,
       email: userData.email,
-    }) as User) // aseguramos tipo
+    }) as User)
     setShowAuthModal(false)
   }
 
@@ -115,67 +113,71 @@ export function MainApp() {
   }
 
   const handleQuestionSolved = (questionTitle: string, isCorrect: boolean) => {
-  if (!isLoggedIn) return
+    if (!isLoggedIn) return
 
-  setUser(prevUser => {
-    if (!prevUser) return prevUser
-    return {
-      ...prevUser,
-      stats: {
-        ...prevUser.stats,
-        solved: isCorrect ? prevUser.stats.solved + 1 : prevUser.stats.solved,
-        score: isCorrect ? prevUser.stats.score + 20 : prevUser.stats.score,
-      },
-      activities: [
-        {
-          date: new Date().toISOString().split("T")[0],
-          name: questionTitle,
-          type: "Resolver",
-          result: isCorrect ? RESULT_CORRECT : RESULT_INCORRECT,
+    setUser(prevUser => {
+      if (!prevUser) return prevUser
+      return {
+        ...prevUser,
+        stats: {
+          ...prevUser.stats,
+          solved: isCorrect ? prevUser.stats.solved + 1 : prevUser.stats.solved,
+          score: isCorrect ? prevUser.stats.score + 20 : prevUser.stats.score,
         },
-        ...prevUser.activities,
-      ],
-    }
-  })
-}
+        activities: [
+          {
+            date: new Date().toISOString().split("T")[0],
+            name: questionTitle,
+            type: "Resolver",
+            result: isCorrect ? RESULT_CORRECT : RESULT_INCORRECT,
+          },
+          ...prevUser.activities,
+        ],
+      }
+    })
+  }
 
-const handleQuestionUpdated = (index: number, updatedQuestion: Question) => {
-  const nuevas = [...availableQuestions]
-  nuevas[index] = updatedQuestion
-  setAvailableQuestions(nuevas)
-}
+  const handleQuestionUpdated = (index: number, updatedQuestion: Question) => {
+    const nuevas = [...availableQuestions]
+    nuevas[index] = updatedQuestion
+    setAvailableQuestions(nuevas)
+  }
 
-return (
-  <div className="min-h-screen bg-gradient-to-b from-teal-50 to-teal-100 dark:from-slate-900 dark:to-slate-800">
-    <Header
-      activeTab={activeTab}
-      setActiveTab={setActiveTab}
-      isLoggedIn={isLoggedIn}
-      user={user!}
-      onLogin={() => setShowAuthModal(true)}
-      onLogout={handleLogout}
-    />
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-teal-100 dark:from-slate-900 dark:to-slate-800">
+      <Header
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isLoggedIn={isLoggedIn}
+        user={user!}
+        onLogin={() => setShowAuthModal(true)}
+        onLogout={handleLogout}
+      />
 
-    <main className="container mx-auto px-4 py-8">
-      {activeTab === TAB_HOME && <HomeTab setActiveTab={setActiveTab} />}
+      <main className="container mx-auto px-4 py-8">
+        {activeTab === TAB_HOME && <HomeTab setActiveTab={setActiveTab} />}
 
-      {activeTab === TAB_CREATE && <CreateQuestionTab onSaveQuestion={handleSaveQuestion} />}
+        {activeTab === TAB_CREATE && <CreateQuestionTab onSaveQuestion={handleSaveQuestion} />}
 
-      {activeTab === TAB_SOLVE && (
-        <SolveQuestionsTab
-          questions={availableQuestions}
-          onQuestionSolved={handleQuestionSolved}
-          onQuestionUpdated={handleQuestionUpdated} // 💥 ESTA LÍNEA SE AÑADE
-          setActiveTab={setActiveTab}
-        />
-      )}
+        {activeTab === TAB_SOLVE && (
+          <SolveQuestionsTab
+            questions={availableQuestions}
+            onQuestionSolved={handleQuestionSolved}
+            onQuestionUpdated={handleQuestionUpdated}
+            setActiveTab={setActiveTab}
+          />
+        )}
 
-      {activeTab === TAB_PROFILE && (
-        <ProfileTab isLoggedIn={isLoggedIn} user={user} onLogin={() => setShowAuthModal(true)} />
-      )}
-    </main>
+        {activeTab === TAB_PROFILE && (
+          <ProfileTab
+            isLoggedIn={isLoggedIn}
+            user={user!}
+            onLogin={() => setShowAuthModal(true)}
+          />
+        )}
+      </main>
 
-    {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} onLogin={handleLogin} />}
-  </div>
-)
+      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} onLogin={handleLogin} />}
+    </div>
+  )
 }
