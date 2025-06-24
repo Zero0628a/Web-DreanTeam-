@@ -27,6 +27,7 @@ export interface User {
     description: string
     type: "order-words" | "order-shapes" | "drawing" | "incoherence"
     words?: string[]
+    correctOrders?: string[];
     correctOrder?: string
     incoherentText?: string
     correctText?: string

@@ -46,9 +46,7 @@ export function SolveQuestionsTab({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Question | null>(null);
 
-  useEffect(() => {
-    initializeQuestionState();
-  }, [questions]);                                                                
+                                                                
 
   const initializeQuestionState = () => {
     const newShuffledWords: string[][] = [];
@@ -71,6 +69,10 @@ export function SolveQuestionsTab({
     setUserAnswers(newUserAnswers);
     setQuestionFeedback(newQuestionFeedback);
   };
+
+ useEffect(() => {
+  initializeQuestionState();
+}, []);
 
   const handleUserAnswerChange = (questionIndex: number, value: string) => {
     const newUserAnswers = [...userAnswers];
@@ -145,7 +147,8 @@ export function SolveQuestionsTab({
     }
   };
 
-  const updateEditForm = (field: string, value: any) => {
+  const updateEditForm = (field: string, value: string | number | boolean) => {
+
     if (editForm) {
       setEditForm({ ...editForm, [field]: value });
     }

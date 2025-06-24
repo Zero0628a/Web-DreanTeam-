@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useCallback, ChangeEvent, useMemo } from "react"
-import { TextCursorInput, Shapes, Pencil, FileSearch, Image, X, Plus, Circle, Square, Triangle } from "lucide-react"
+import { TextCursorInput, Shapes, Image, X, Plus, Circle, Square, Triangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+
 
 // Tipos de figuras disponibles
 const SHAPE_TYPES = [
@@ -481,27 +482,21 @@ export function CreateQuestionTab({ onSaveQuestion }: CreateQuestionTabProps) {
               <div className="mb-4">
                 <label className="block mb-2 text-sm font-medium">Seleccionar figura:</label>
                 <div className="grid grid-cols-4 md:grid-cols-8 gap-2 mb-3">
-                  {SHAPE_TYPES.map((shapeType) => {
-                    const IconComponent = shapeType.icon
-                    return (
-                      <div
-                        key={shapeType.id}
-                        onClick={() => setSelectedShapeType(shapeType)}
-                        className={`border rounded-lg p-2 cursor-pointer transition-colors flex flex-col items-center gap-1 ${
-                          selectedShapeType.id === shapeType.id 
-                            ? "border-teal-500 bg-teal-50 dark:bg-teal-900/20" 
-                            : "border-gray-300 dark:border-gray-600 hover:border-teal-300"
-                        }`}
-                      >
-                        {IconComponent ? (
-                          <IconComponent size={24} style={{ color: shapeType.color }} />
-                        ) : (
-                          <ShapeRenderer shapeId={shapeType.id} size={24} />
-                        )}
-                        <span className="text-xs text-center">{shapeType.name}</span>
-                      </div>
-                    )
-                  })}
+                  {SHAPE_TYPES.map((shapeType) => (
+                <div
+                  key={shapeType.id}
+                  onClick={() => setSelectedShapeType(shapeType)}
+                  className={`border rounded-lg p-2 cursor-pointer transition-colors flex flex-col items-center gap-1 ${
+                    selectedShapeType.id === shapeType.id
+                      ? "border-teal-500 bg-teal-50 dark:bg-teal-900/20"
+                      : "border-gray-300 dark:border-gray-600 hover:border-teal-300"
+                  }`}
+                >
+                  <ShapeRenderer shapeId={shapeType.id} size={24} color={shapeType.color} />
+                  <span className="text-xs text-center">{shapeType.name}</span>
+                </div>
+              ))}
+
                 </div>
                 
                 <Button 
