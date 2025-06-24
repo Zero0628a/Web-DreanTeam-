@@ -151,7 +151,7 @@ return (
       activeTab={activeTab}
       setActiveTab={setActiveTab}
       isLoggedIn={isLoggedIn}
-      user={user}
+      user={user!}
       onLogin={() => setShowAuthModal(true)}
       onLogout={handleLogout}
     />
