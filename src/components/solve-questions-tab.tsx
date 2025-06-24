@@ -2,7 +2,6 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
-import { CheckCircle, XCircle, Trash2, Edit3, Save, X, Plus } from "lucide-react";
 import { Circle, Square, Triangle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
