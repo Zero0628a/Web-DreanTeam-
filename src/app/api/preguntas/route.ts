@@ -1,22 +1,22 @@
-export async function GET() {
-  return new Response(JSON.stringify({ mensaje: "Hola desde la API 🎉" }), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/json",
-    },
+// src/app/api/preguntas/route.ts
+
+export async function POST(request: Request) {
+  const data = await request.json();
+
+  return new Response(JSON.stringify({
+    recibido: data,
+    mensaje: "¡Datos recibidos correctamente! 🚀",
+  }), {
+    headers: { "Content-Type": "application/json" },
+    status: 200
   });
 }
 
-export async function POST(req: Request) {
-  const body = await req.json();
-
+export async function GET() {
   return new Response(JSON.stringify({
-    recibido: body,
-    mensaje: "¡Datos recibidos correctamente! 🚀",
+    mensaje: "Hola desde la API 🎉"
   }), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
+    status: 200
   });
 }
