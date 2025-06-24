@@ -25,6 +25,7 @@ interface SolveQuestionsTabProps {
   setActiveTab: (tab: "home" | "create" | "solve" | "profile") => void;
 }
 
+
 export function SolveQuestionsTab({
   questions,
   onQuestionSolved,
