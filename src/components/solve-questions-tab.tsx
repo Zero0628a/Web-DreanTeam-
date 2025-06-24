@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
-import { Circle, Square, Triangle } from 'lucide-react';
+import { CheckCircle, XCircle, Trash2, Edit3, Save, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -10,17 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Question } from "@/lib/types";
 
 const SHAPE_TYPES = [
-  { id: 'circle', name: 'Círculo', icon: Circle, color: '#3B82F6' },
-  { id: 'square', name: 'Cuadrado', icon: Square, color: '#EF4444' },
-  { id: 'triangle', name: 'Triángulo', icon: Triangle, color: '#10B981' },
-  { id: 'rectangle', name: 'Rectángulo', color: '#F59E0B' },
-  { id: 'diamond', name: 'Rombo', color: '#8B5CF6' },
-  { id: 'pentagon', name: 'Pentágono', color: '#EC4899' },
-  { id: 'hexagon', name: 'Hexágono', color: '#06B6D4' },
-  { id: 'star', name: 'Estrella', color: '#F97316' }
+  { id: "circle", name: "Círculo" },
+  { id: "square", name: "Cuadrado" },
+  { id: "triangle", name: "Triángulo" },
+  { id: "rectangle", name: "Rectángulo" },
+  { id: "diamond", name: "Diamante" },
+  { id: "pentagon", name: "Pentágono" },
 ];
-
-
 
 interface SolveQuestionsTabProps {
   questions: Question[];
@@ -52,7 +48,7 @@ export function SolveQuestionsTab({
 
   useEffect(() => {
     initializeQuestionState();
-  }, [questions]);
+  }, [questions]);                                                                
 
   const initializeQuestionState = () => {
     const newShuffledWords: string[][] = [];
@@ -61,17 +57,14 @@ export function SolveQuestionsTab({
     const newQuestionFeedback: ({ correct: boolean; message: string } | null)[] = [];
 
     questions.forEach((question, index) => {
-  if (question.type === "order-words") {
-    newShuffledWords[index] = [...(question.words || [])].sort(() => Math.random() - 0.5);
-    newSelectedWords[index] = [];
-  } else if (question.type === "order-shapes") {
-    newShuffledWords[index] = [...(question.shapes?.map(s => s.id) || [])].sort(() => Math.random() - 0.5);
-    newSelectedWords[index] = [];
-  } else {
-    newUserAnswers[index] = "";
-  }
-  newQuestionFeedback[index] = null;
-});
+      if (question.type === "order-words" || question.type === "order-shapes") {
+        newShuffledWords[index] = [...(question.words || [])].sort(() => Math.random() - 0.5);
+        newSelectedWords[index] = [];
+      } else {
+        newUserAnswers[index] = "";
+      }
+      newQuestionFeedback[index] = null;
+    });
 
     setShuffledWords(newShuffledWords);
     setSelectedWords(newSelectedWords);
@@ -219,107 +212,76 @@ export function SolveQuestionsTab({
   };
 
   const checkAnswer = (questionIndex: number) => {
-  const question = questions[questionIndex];
+    const question = questions[questionIndex];
 
-  if (question.type === "order-words" || question.type === "order-shapes") {
-    let userAnswer = "";
-    
-    if (question.type === "order-words") {
-      // Para palabras, usamos directamente las palabras seleccionadas
-      userAnswer = selectedWords[questionIndex]?.join(" ") || "";
-    } else if (question.type === "order-shapes") {
-      // Para figuras, convertimos los IDs a nombres en español
-      const selectedShapeNames = selectedWords[questionIndex]?.map(shapeId => {
-        const shape = SHAPE_TYPES.find(s => s.id === shapeId);
-        return shape ? shape.name : shapeId;
-      }) || [];
-      userAnswer = selectedShapeNames.join(" ");
-    }
+    if (question.type === "order-words" || question.type === "order-shapes") {
+      const userAnswer = selectedWords[questionIndex]?.join(" ") || "";
 
-    if (!userAnswer.trim()) {
-      const newQuestionFeedback = [...questionFeedback];
-      newQuestionFeedback[questionIndex] = {
-        correct: false,
-        message: question.type === "order-words" 
-          ? "Por favor, ordena las palabras antes de comprobar la respuesta."
-          : "Por favor, ordena las figuras antes de comprobar la respuesta.",
-      };
-      setQuestionFeedback(newQuestionFeedback);
-      return;
-    }
-
-    // Comparación mejorada: también verifica tanto IDs como nombres
-    const isCorrect = question.correctOrders?.some(
-      (validOrder) => {
-        const normalizedValidOrder = validOrder.trim().toLowerCase();
-        const normalizedUserAnswer = userAnswer.trim().toLowerCase();
-        
-        // Comparación directa
-        if (normalizedUserAnswer === normalizedValidOrder) {
-          return true;
-        }
-        
-        // Si es order-shapes, también compara con los IDs originales
-        if (question.type === "order-shapes") {
-          const userAnswerWithIds = selectedWords[questionIndex]?.join(" ").trim().toLowerCase() || "";
-          return userAnswerWithIds === normalizedValidOrder;
-        }
-        
-        return false;
+      if (!userAnswer.trim()) {
+        const newQuestionFeedback = [...questionFeedback];
+        newQuestionFeedback[questionIndex] = {
+          correct: false,
+          message: "Por favor, ordena las palabras antes de comprobar la respuesta.",
+        };
+        setQuestionFeedback(newQuestionFeedback);
+        return;
       }
-    ) || false;
 
-    const newQuestionFeedback = [...questionFeedback];
-    newQuestionFeedback[questionIndex] = {
-      correct: isCorrect,
-      message: isCorrect
-        ? question.feedbackCorrect || "¡Correcto!"
-        : question.feedbackIncorrect || "Incorrecto, inténtalo de nuevo.",
-    };
-    setQuestionFeedback(newQuestionFeedback);
+      const isCorrect = question.correctOrders?.some(
+        (validOrder) =>
+          userAnswer.trim().toLowerCase() === validOrder.trim().toLowerCase()
+      ) || false;
 
-    onQuestionSolved(question.title, isCorrect);
-  }
-
-  // ... resto del código para incoherence y drawing permanece igual
-  if (question.type === "incoherence") {
-    const userAnswer = userAnswers[questionIndex]?.toLowerCase() || "";
-    
-    if (!userAnswer.trim()) {
       const newQuestionFeedback = [...questionFeedback];
       newQuestionFeedback[questionIndex] = {
-        correct: false,
-        message: "Por favor, escribe tu respuesta antes de comprobar.",
+        correct: isCorrect,
+        message: isCorrect
+          ? question.feedbackCorrect || "¡Correcto!"
+          : question.feedbackIncorrect || "Incorrecto, inténtalo de nuevo.",
       };
       setQuestionFeedback(newQuestionFeedback);
-      return;
+
+      onQuestionSolved(question.title, isCorrect);
     }
 
-    const isCorrect = userAnswer.includes("salta") && userAnswer.includes("suena");
+    if (question.type === "incoherence") {
+      const userAnswer = userAnswers[questionIndex]?.toLowerCase() || "";
+      
+      if (!userAnswer.trim()) {
+        const newQuestionFeedback = [...questionFeedback];
+        newQuestionFeedback[questionIndex] = {
+          correct: false,
+          message: "Por favor, escribe tu respuesta antes de comprobar.",
+        };
+        setQuestionFeedback(newQuestionFeedback);
+        return;
+      }
 
-    const newQuestionFeedback = [...questionFeedback];
-    newQuestionFeedback[questionIndex] = {
-      correct: isCorrect,
-      message: isCorrect
-        ? question.feedbackCorrect || "¡Correcto!"
-        : question.feedbackIncorrect || "Incorrecto, inténtalo de nuevo.",
-    };
-    setQuestionFeedback(newQuestionFeedback);
+      const isCorrect = userAnswer.includes("salta") && userAnswer.includes("suena");
 
-    onQuestionSolved(question.title, isCorrect);
-  }
+      const newQuestionFeedback = [...questionFeedback];
+      newQuestionFeedback[questionIndex] = {
+        correct: isCorrect,
+        message: isCorrect
+          ? question.feedbackCorrect || "¡Correcto!"
+          : question.feedbackIncorrect || "Incorrecto, inténtalo de nuevo.",
+      };
+      setQuestionFeedback(newQuestionFeedback);
 
-  if (question.type === "drawing") {
-    const newQuestionFeedback = [...questionFeedback];
-    newQuestionFeedback[questionIndex] = {
-      correct: true,
-      message: question.feedbackCorrect || "¡Excelente dibujo!",
-    };
-    setQuestionFeedback(newQuestionFeedback);
+      onQuestionSolved(question.title, isCorrect);
+    }
 
-    onQuestionSolved(question.title, true);
-  }
-};
+    if (question.type === "drawing") {
+      const newQuestionFeedback = [...questionFeedback];
+      newQuestionFeedback[questionIndex] = {
+        correct: true,
+        message: question.feedbackCorrect || "¡Excelente dibujo!",
+      };
+      setQuestionFeedback(newQuestionFeedback);
+
+      onQuestionSolved(question.title, true);
+    }
+  };
 
   const clearCanvas = () => {
     const canvas = document.querySelector("canvas");
@@ -407,36 +369,23 @@ export function SolveQuestionsTab({
   };
 
   const renderShapeSVG = (shapeId: string) => {
-  switch (shapeId) {
-    case 'circle':
-      return <circle cx="20" cy="20" r="18" fill="#3B82F6" stroke="white" strokeWidth="2" />;
-    case 'square':
-      return <rect x="4" y="4" width="32" height="32" fill="#EF4444" stroke="white" strokeWidth="2" />;
-    case 'triangle':
-      return <polygon points="20,4 36,36 4,36" fill="#10B981" stroke="white" strokeWidth="2" />;
-    case 'rectangle':
-      return <rect x="4" y="10" width="32" height="20" fill="#F59E0B" stroke="white" strokeWidth="2" />;
-    case 'diamond':
-      return <polygon points="20,4 36,20 20,36 4,20" fill="#8B5CF6" stroke="white" strokeWidth="2" />;
-    case 'pentagon':
-      return <polygon points="20,4 36,16 30,36 10,36 4,16" fill="#EC4899" stroke="white" strokeWidth="2" />;
-    case 'hexagon':
-      return <polygon points="20,4 36,12 36,28 20,36 4,28 4,12" fill="#06B6D4" stroke="white" strokeWidth="2" />;
-    case 'star':
-      return (
-        <polygon
-          points="20,4 24,14 35,14 26,21 30,32 20,25 10,32 14,21 5,14 16,14"
-          fill="#F97316"
-          stroke="white"
-          strokeWidth="2"
-        />
-      );
-    default:
-      return null;
-  }
-};
-
-
+    switch (shapeId) {
+      case "circle":
+        return <circle cx="20" cy="20" r="18" fill="#3B82F6" stroke="white" strokeWidth="2" />;
+      case "square":
+        return <rect x="4" y="4" width="32" height="32" fill="#EF4444" stroke="white" strokeWidth="2" />;
+      case "triangle":
+        return <polygon points="20,4 36,36 4,36" fill="#10B981" stroke="white" strokeWidth="2" />;
+      case "rectangle":
+        return <rect x="4" y="10" width="32" height="20" fill="#F59E0B" stroke="white" strokeWidth="2" />;
+      case "diamond":
+        return <polygon points="20,4 36,20 20,36 4,20" fill="#8B5CF6" stroke="white" strokeWidth="2" />;
+      case "pentagon":
+        return <polygon points="20,4 36,16 30,36 10,36 4,16" fill="#EC4899" stroke="white" strokeWidth="2" />;
+      default:
+        return null;
+    }
+  };
 
   if (questions.length === 0) {
     return (
@@ -558,6 +507,8 @@ export function SolveQuestionsTab({
                       <SelectContent>
                         <SelectItem value="order-words">Ordenar palabras</SelectItem>
                         <SelectItem value="order-shapes">Ordenar formas</SelectItem>
+                        <SelectItem value="incoherence">Detectar incoherencias</SelectItem>
+                        <SelectItem value="drawing">Dibujo libre</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
