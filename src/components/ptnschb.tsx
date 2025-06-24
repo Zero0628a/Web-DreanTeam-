@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+
 import { useState, useEffect } from "react";
 import { CheckCircle, XCircle, Trash2, Edit3, Save, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Question } from "@/lib/types";
 
+// Definición de tipos de formas para order-shapes
 const SHAPE_TYPES = [
   { id: "circle", name: "Círculo" },
   { id: "square", name: "Cuadrado" },
@@ -34,7 +36,9 @@ export function SolveQuestionsTab({
   const [shuffledWords, setShuffledWords] = useState<string[][]>([]);
   const [selectedWords, setSelectedWords] = useState<string[][]>([]);
   const [userAnswers, setUserAnswers] = useState<string[]>([]);
-  const [questionFeedback, setQuestionFeedback] = useState<({ correct: boolean; message: string } | null)[]>([]);
+  const [questionFeedback, setQuestionFeedback] = useState<
+    ({ correct: boolean; message: string } | null)[]
+  >([]);
   const [draggedWord, setDraggedWord] = useState<{
     questionIndex: number;
     word: string;
@@ -42,6 +46,8 @@ export function SolveQuestionsTab({
     index: number;
   } | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  // Estados para edición
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Question | null>(null);
 
@@ -57,7 +63,9 @@ export function SolveQuestionsTab({
 
     questions.forEach((question, index) => {
       if (question.type === "order-words" || question.type === "order-shapes") {
-        newShuffledWords[index] = [...(question.words || [])].sort(() => Math.random() - 0.5);
+        newShuffledWords[index] = [...(question.words || [])].sort(
+          () => Math.random() - 0.5
+        );
         newSelectedWords[index] = [];
       } else {
         newUserAnswers[index] = "";
@@ -77,6 +85,7 @@ export function SolveQuestionsTab({
     setUserAnswers(newUserAnswers);
   };
 
+  // Funciones de edición
   const handleEditQuestion = (index: number) => {
     const questionToEdit = questions[index];
     setEditingIndex(index);
@@ -94,6 +103,7 @@ export function SolveQuestionsTab({
 
   const handleSaveEdit = () => {
     if (editForm && editingIndex !== null) {
+      // Validar que los campos requeridos estén completos
       if (!editForm.title?.trim()) {
         alert("El título es requerido");
         return;
@@ -104,9 +114,10 @@ export function SolveQuestionsTab({
         return;
       }
 
+      // Validaciones específicas por tipo
       if (editForm.type === "order-words" || editForm.type === "order-shapes") {
         if (!editForm.words || editForm.words.length === 0 || editForm.words.some(w => !w.trim())) {
-          alert(`Las ${editForm.type === "order-words" ? "palabras" : "formas"} son requeridas y no pueden estar vacías`);
+          alert(Las ${editForm.type === "order-words" ? "palabras" : "formas"} son requeridas y no pueden estar vacías);
           return;
         }
         
@@ -123,6 +134,7 @@ export function SolveQuestionsTab({
         }
       }
 
+      // Limpiar la pregunta editada
       const cleanedForm = {
         ...editForm,
         title: editForm.title.trim(),
@@ -138,6 +150,7 @@ export function SolveQuestionsTab({
       setEditingIndex(null);
       setEditForm(null);
       
+      // Reinicializar el estado para todas las preguntas
       setTimeout(() => {
         initializeQuestionState();
       }, 100);
@@ -256,6 +269,7 @@ export function SolveQuestionsTab({
         return;
       }
 
+      // Validación mejorada para incoherencias
       const isCorrect = userAnswer.includes("salta") && userAnswer.includes("suena");
 
       const newQuestionFeedback = [...questionFeedback];
@@ -271,6 +285,7 @@ export function SolveQuestionsTab({
     }
 
     if (question.type === "drawing") {
+      // Para dibujos, siempre consideramos correcto si hay algo dibujado
       const newQuestionFeedback = [...questionFeedback];
       newQuestionFeedback[questionIndex] = {
         correct: true,
@@ -292,6 +307,7 @@ export function SolveQuestionsTab({
     }
   };
 
+  // Funciones para drag and drop
   const handleDragStart = (
     questionIndex: number,
     word: string,
@@ -367,25 +383,6 @@ export function SolveQuestionsTab({
     setSelectedWords(newSelectedWords);
   };
 
-  const renderShapeSVG = (shapeId: string) => {
-    switch (shapeId) {
-      case "circle":
-        return <circle cx="20" cy="20" r="18" fill="#3B82F6" stroke="white" strokeWidth="2" />;
-      case "square":
-        return <rect x="4" y="4" width="32" height="32" fill="#EF4444" stroke="white" strokeWidth="2" />;
-      case "triangle":
-        return <polygon points="20,4 36,36 4,36" fill="#10B981" stroke="white" strokeWidth="2" />;
-      case "rectangle":
-        return <rect x="4" y="10" width="32" height="20" fill="#F59E0B" stroke="white" strokeWidth="2" />;
-      case "diamond":
-        return <polygon points="20,4 36,20 20,36 4,20" fill="#8B5CF6" stroke="white" strokeWidth="2" />;
-      case "pentagon":
-        return <polygon points="20,4 36,16 30,36 10,36 4,16" fill="#EC4899" stroke="white" strokeWidth="2" />;
-      default:
-        return null;
-    }
-  };
-
   if (questions.length === 0) {
     return (
       <div className="max-w-4xl mx-auto">
@@ -430,6 +427,25 @@ export function SolveQuestionsTab({
     );
   }
 
+  const renderShapeSVG = (shapeId: string) => {
+    switch (shapeId) {
+      case "circle":
+        return <circle cx="20" cy="20" r="18" fill="#3B82F6" stroke="white" strokeWidth="2" />;
+      case "square":
+        return <rect x="4" y="4" width="32" height="32" fill="#EF4444" stroke="white" strokeWidth="2" />;
+      case "triangle":
+        return <polygon points="20,4 36,36 4,36" fill="#10B981" stroke="white" strokeWidth="2" />;
+      case "rectangle":
+        return <rect x="4" y="10" width="32" height="20" fill="#F59E0B" stroke="white" strokeWidth="2" />;
+      case "diamond":
+        return <polygon points="20,4 36,20 20,36 4,20" fill="#8B5CF6" stroke="white" strokeWidth="2" />;
+      case "pentagon":
+        return <polygon points="20,4 36,16 30,36 10,36 4,16" fill="#EC4899" stroke="white" strokeWidth="2" />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">
@@ -444,6 +460,7 @@ export function SolveQuestionsTab({
           >
             <div className="p-6">
               {editingIndex === index ? (
+                // Formulario de edición
                 <div className="space-y-4">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold text-gray-800 dark:text-white">
@@ -469,6 +486,7 @@ export function SolveQuestionsTab({
                     </div>
                   </div>
 
+                  {/* Campos básicos */}
                   <div>                             
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Título
@@ -512,6 +530,7 @@ export function SolveQuestionsTab({
                     </Select>
                   </div>
 
+                  {/* Campos específicos según el tipo */}
                   {(editForm?.type === "order-words" || editForm?.type === "order-shapes") && (
                     <>
                       <div>
@@ -569,7 +588,7 @@ export function SolveQuestionsTab({
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Respuestas correctas
                         </label>
-                        {(editForm?.correctOrders || []).map((order, orderIndex) => (
+                        {(editForm?.correctOrder || []).map((order, orderIndex) => (
                           <div key={orderIndex} className="flex gap-2 mb-2">
                             <Input
                               value={order}
@@ -614,6 +633,7 @@ export function SolveQuestionsTab({
                     </div>
                   )}
 
+                  {/* Feedback */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Mensaje de respuesta correcta
@@ -639,6 +659,7 @@ export function SolveQuestionsTab({
                   </div>
                 </div>
               ) : (
+                // Vista normal de la pregunta
                 <>
                   <div className="flex justify-between items-start mb-4">
                     <div>
@@ -670,6 +691,7 @@ export function SolveQuestionsTab({
                     </div>
                   )}
 
+                 {/* Componente para ordenar palabras */}
                   {question.type === "order-words" && (
                     <div className="mb-6">
                       <div className="bg-gray-100 dark:bg-slate-700 p-4 rounded-lg mb-4">
@@ -734,13 +756,12 @@ export function SolveQuestionsTab({
                           Figuras disponibles:
                         </p>
                         <div className="flex flex-wrap gap-3 mb-4 min-h-[60px]">
-                          {shuffledWords[index]?.map((shapeId, shapeIndex) => (
+                          {shuffledWords[index]?.map((shapeId, i) => (
                             <div
-                              key={shapeIndex}
-                              title={SHAPE_TYPES.find(s => s.id === shapeId)?.name || shapeId}
+                              key={i}
                               draggable
-                              onDragStart={() => handleDragStart(index, shapeId, "available", shapeIndex)}
-                              className="w-14 h-14 relative cursor-move group"
+                              onDragStart={() => handleDragStart(index, shapeId, "available", i)}
+                              className="w-14 h-14 cursor-move"
                             >
                               <svg width="100%" height="100%" viewBox="0 0 40 40">
                                 {renderShapeSVG(shapeId)}
@@ -763,7 +784,9 @@ export function SolveQuestionsTab({
                               key={shapeIndex}
                               title={SHAPE_TYPES.find(s => s.id === shapeId)?.name || shapeId}
                               draggable
-                              onDragStart={() => handleDragStart(index, shapeId, "selected", shapeIndex)}
+                              onDragStart={() =>
+                                handleDragStart(index, shapeId, "selected", shapeIndex)
+                              }
                               className="w-14 h-14 relative cursor-move group"
                             >
                               <svg width="100%" height="100%" viewBox="0 0 40 40">
@@ -782,23 +805,7 @@ export function SolveQuestionsTab({
                     </div>
                   )}
 
-                  {question.type === "incoherence" && (
-                    <div className="mb-6">
-                      <div className="bg-gray-100 dark:bg-slate-700 p-4 rounded-lg mb-4">
-                        <p className="text-gray-700 dark:text-gray-300 mb-2">
-                          {question.incoherentText}
-                        </p>
-                        <Textarea
-                          value={userAnswers[index] || ""}
-                          onChange={(e) => handleUserAnswerChange(index, e.target.value)}
-                          placeholder="Escribe las incoherencias que encuentres..."
-                          className="dark:bg-slate-800"
-                          rows={4}
-                        />
-                      </div>
-                    </div>
-                  )}
-
+                  {/* Componente para dibujar */}
                   {question.type === "drawing" && (
                     <div className="mb-6">
                       <div className="bg-gray-100 dark:bg-slate-700 p-4 rounded-lg mb-4">
@@ -841,10 +848,11 @@ export function SolveQuestionsTab({
               )}
             </div>
 
+            {/* Feedback */}
             {questionFeedback[index] && (
               <div
                 className={`p-4 border-t border-gray-200 dark:border-gray-700 ${
-                  questionFeedback[index]?.correct
+                  questionFeedback[index].correct
                     ? "bg-green-50 dark:bg-green-900/20"
                     : "bg-red-50 dark:bg-red-900/20"
                 }`}
@@ -852,12 +860,12 @@ export function SolveQuestionsTab({
                 <div className="flex items-start">
                   <div
                     className={`${
-                      questionFeedback[index]?.correct
+                      questionFeedback[index].correct
                         ? "text-green-500"
                         : "text-red-500"
                     } mr-3 mt-1`}
                   >
-                    {questionFeedback[index]?.correct ? (
+                    {questionFeedback[index].correct ? (
                       <CheckCircle size={20} />
                     ) : (
                       <XCircle size={20} />
@@ -866,23 +874,23 @@ export function SolveQuestionsTab({
                   <div>
                     <h4
                       className={`font-medium ${
-                        questionFeedback[index]?.correct
+                        questionFeedback[index].correct
                           ? "text-green-800 dark:text-green-200"
                           : "text-red-800 dark:text-red-200"
                       }`}
                     >
-                      {questionFeedback[index]?.correct
+                      {questionFeedback[index].correct
                         ? "¡Correcto!"
                         : "Incorrecto"}
                     </h4>
                     <p
                       className={`${
-                        questionFeedback[index]?.correct
+                        questionFeedback[index].correct
                           ? "text-green-700 dark:text-green-300"
                           : "text-red-700 dark:text-red-300"
                       }`}
                     >
-                      {questionFeedback[index]?.message}
+                      {questionFeedback[index].message}
                     </p>
                   </div>
                 </div>
