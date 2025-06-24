@@ -18,6 +18,7 @@ const TAB_PROFILE: Tab = "profile"
 const RESULT_CORRECT = "Correcto"
 const RESULT_INCORRECT = "Incorrecto"
 
+
 export function MainApp() {
   const [activeTab, setActiveTab] = useState<Tab>(TAB_HOME)
   const [user, setUser] = useState<User | null>({
@@ -114,60 +115,67 @@ export function MainApp() {
   }
 
   const handleQuestionSolved = (questionTitle: string, isCorrect: boolean) => {
-    if (!isLoggedIn) return
+  if (!isLoggedIn) return
 
-    setUser(prevUser => {
-      if (!prevUser) return prevUser
-      return {
-        ...prevUser,
-        stats: {
-          ...prevUser.stats,
-          solved: isCorrect ? prevUser.stats.solved + 1 : prevUser.stats.solved,
-          score: isCorrect ? prevUser.stats.score + 20 : prevUser.stats.score,
+  setUser(prevUser => {
+    if (!prevUser) return prevUser
+    return {
+      ...prevUser,
+      stats: {
+        ...prevUser.stats,
+        solved: isCorrect ? prevUser.stats.solved + 1 : prevUser.stats.solved,
+        score: isCorrect ? prevUser.stats.score + 20 : prevUser.stats.score,
+      },
+      activities: [
+        {
+          date: new Date().toISOString().split("T")[0],
+          name: questionTitle,
+          type: "Resolver",
+          result: isCorrect ? RESULT_CORRECT : RESULT_INCORRECT,
         },
-        activities: [
-          {
-            date: new Date().toISOString().split("T")[0],
-            name: questionTitle,
-            type: "Resolver",
-            result: isCorrect ? RESULT_CORRECT : RESULT_INCORRECT,
-          },
-          ...prevUser.activities,
-        ],
-      }
-    })
-  }
+        ...prevUser.activities,
+      ],
+    }
+  })
+}
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-teal-100 dark:from-slate-900 dark:to-slate-800">
-      <Header
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        isLoggedIn={isLoggedIn}
-        user={user}
-        onLogin={() => setShowAuthModal(true)}
-        onLogout={handleLogout}
-      />
+const handleQuestionUpdated = (index: number, updatedQuestion: Question) => {
+  const nuevas = [...availableQuestions]
+  nuevas[index] = updatedQuestion
+  setAvailableQuestions(nuevas)
+}
 
-      <main className="container mx-auto px-4 py-8">
-        {activeTab === TAB_HOME && <HomeTab setActiveTab={setActiveTab} />}
+return (
+  <div className="min-h-screen bg-gradient-to-b from-teal-50 to-teal-100 dark:from-slate-900 dark:to-slate-800">
+    <Header
+      activeTab={activeTab}
+      setActiveTab={setActiveTab}
+      isLoggedIn={isLoggedIn}
+      user={user}
+      onLogin={() => setShowAuthModal(true)}
+      onLogout={handleLogout}
+    />
 
-        {activeTab === TAB_CREATE && <CreateQuestionTab onSaveQuestion={handleSaveQuestion} />}
+    <main className="container mx-auto px-4 py-8">
+      {activeTab === TAB_HOME && <HomeTab setActiveTab={setActiveTab} />}
 
-        {activeTab === TAB_SOLVE && (
-          <SolveQuestionsTab
-            questions={availableQuestions}
-            onQuestionSolved={handleQuestionSolved}
-            setActiveTab={setActiveTab}
-          />
-        )}
+      {activeTab === TAB_CREATE && <CreateQuestionTab onSaveQuestion={handleSaveQuestion} />}
 
-        {activeTab === TAB_PROFILE && (
-          <ProfileTab isLoggedIn={isLoggedIn} user={user} onLogin={() => setShowAuthModal(true)} />
-        )}
-      </main>
+      {activeTab === TAB_SOLVE && (
+        <SolveQuestionsTab
+          questions={availableQuestions}
+          onQuestionSolved={handleQuestionSolved}
+          onQuestionUpdated={handleQuestionUpdated} // 💥 ESTA LÍNEA SE AÑADE
+          setActiveTab={setActiveTab}
+        />
+      )}
 
-      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} onLogin={handleLogin} />}
-    </div>
-  )
+      {activeTab === TAB_PROFILE && (
+        <ProfileTab isLoggedIn={isLoggedIn} user={user} onLogin={() => setShowAuthModal(true)} />
+      )}
+    </main>
+
+    {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} onLogin={handleLogin} />}
+  </div>
+)
 }

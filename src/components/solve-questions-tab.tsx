@@ -146,6 +146,7 @@ export function SolveQuestionsTab({
         feedbackIncorrect: editForm.feedbackIncorrect?.trim() || "Incorrecto, inténtalo de nuevo.",
       };
 
+    
       onQuestionUpdated(editingIndex, cleanedForm);
       setEditingIndex(null);
       setEditForm(null);
