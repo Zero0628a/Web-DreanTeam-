@@ -37,5 +37,3 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 
 prueba commit
-prueba commit 2 
-prueba commit 3 
