@@ -72,47 +72,55 @@ export function MainApp() {
   ])
 
   const handleLogin = (userData: { name: string; email: string }) => {
-    setUser(prevUser => ({
-      ...prevUser,
-      name: userData.name,
-      email: userData.email,
-    }) as User) // aseguramos tipo
-    setShowAuthModal(false)
-  }
+  setUser({
+    name: userData.name,
+    email: userData.email,
+    stats: {
+      solved: 0,
+      created: 0,
+      score: 0,
+    },
+    skills: [],
+    activities: [],
+  })
+  setShowAuthModal(false)
+}
+
 
   const handleLogout = () => {
     setUser(null)
   }
 
   const handleSaveQuestion = (newQuestion: Question) => {
-    setAvailableQuestions(prevQuestions => {
-      if (prevQuestions.some(q => q.title === newQuestion.title)) {
-        alert("Ya existe una pregunta con ese título")
-        return prevQuestions
-      }
-      return [...prevQuestions, newQuestion]
-    })
+  setAvailableQuestions(prevQuestions => {
+    if (prevQuestions.some(q => q.title === newQuestion.title)) {
+      alert("Ya existe una pregunta con ese título")
+      return prevQuestions
+    }
+    return [...prevQuestions, newQuestion]
+  })
 
-    setUser(prevUser => {
-      if (!prevUser) return prevUser
-      return {
-        ...prevUser,
-        stats: {
-          ...prevUser.stats,
-          created: prevUser.stats.created + 1,
+  setUser(prevUser => {
+    if (!prevUser) return prevUser
+    return {
+      ...prevUser,
+      stats: {
+        ...prevUser.stats,
+        created: prevUser.stats.created + 1,
+      },
+      activities: [
+        {
+          date: new Date().toISOString().split("T")[0],
+          name: newQuestion.title,
+          type: "Crear",
+          result: RESULT_CORRECT,
         },
-        activities: [
-          {
-            date: new Date().toISOString().split("T")[0],
-            name: newQuestion.title,
-            type: "Crear",
-            result: RESULT_CORRECT,
-          },
-          ...prevUser.activities,
-        ],
-      }
-    })
-  }
+        ...prevUser.activities,
+      ],
+    }
+  })
+}
+
 
   const handleQuestionSolved = (questionTitle: string, isCorrect: boolean) => {
   if (!isLoggedIn) return
