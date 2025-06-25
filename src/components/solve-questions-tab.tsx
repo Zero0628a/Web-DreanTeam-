@@ -148,11 +148,12 @@ export function SolveQuestionsTab({
     }
   };
 
-  const updateEditForm = (field: string, value: any) => {
-    if (editForm) {
-      setEditForm({ ...editForm, [field]: value });
-    }
-  };
+  const updateEditForm = (field: string, value: string | number | boolean) => {
+  if (editForm) {
+    setEditForm({ ...editForm, [field]: value });
+  }
+};
+
 
   const addWordToEditForm = () => {
     if (editForm) {
