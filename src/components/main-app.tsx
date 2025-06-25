@@ -171,7 +171,7 @@ return (
       )}
 
       {activeTab === TAB_PROFILE && (
-        <ProfileTab isLoggedIn={isLoggedIn} user={user} onLogin={() => setShowAuthModal(true)} />
+        <ProfileTab isLoggedIn={isLoggedIn} user={user!} onLogin={() => setShowAuthModal(true)} />
       )}
     </main>
 
