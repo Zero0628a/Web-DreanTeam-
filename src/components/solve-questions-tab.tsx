@@ -46,7 +46,9 @@ export function SolveQuestionsTab({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Question | null>(null);
 
-                                                                
+  useEffect(() => {
+    initializeQuestionState();
+  }, [questions]);
 
   const initializeQuestionState = () => {
     const newShuffledWords: string[][] = [];
@@ -55,24 +57,23 @@ export function SolveQuestionsTab({
     const newQuestionFeedback: ({ correct: boolean; message: string } | null)[] = [];
 
     questions.forEach((question, index) => {
-      if (question.type === "order-words" || question.type === "order-shapes") {
-        newShuffledWords[index] = [...(question.words || [])].sort(() => Math.random() - 0.5);
-        newSelectedWords[index] = [];
-      } else {
-        newUserAnswers[index] = "";
-      }
-      newQuestionFeedback[index] = null;
-    });
+  if (question.type === "order-words") {
+    newShuffledWords[index] = [...(question.words || [])].sort(() => Math.random() - 0.5);
+    newSelectedWords[index] = [];
+  } else if (question.type === "order-shapes") {
+    newShuffledWords[index] = [...(question.shapes?.map(s => s.id) || [])].sort(() => Math.random() - 0.5);
+    newSelectedWords[index] = [];
+  } else {
+    newUserAnswers[index] = "";
+  }
+  newQuestionFeedback[index] = null;
+});
 
     setShuffledWords(newShuffledWords);
     setSelectedWords(newSelectedWords);
     setUserAnswers(newUserAnswers);
     setQuestionFeedback(newQuestionFeedback);
   };
-
- useEffect(() => {
-  initializeQuestionState();
-}, []);
 
   const handleUserAnswerChange = (questionIndex: number, value: string) => {
     const newUserAnswers = [...userAnswers];
@@ -147,8 +148,7 @@ export function SolveQuestionsTab({
     }
   };
 
-  const updateEditForm = (field: string, value: string | number | boolean) => {
-
+  const updateEditForm = (field: string, value: any) => {
     if (editForm) {
       setEditForm({ ...editForm, [field]: value });
     }
@@ -215,77 +215,107 @@ export function SolveQuestionsTab({
   };
 
   const checkAnswer = (questionIndex: number) => {
-    const question = questions[questionIndex];
+  const question = questions[questionIndex];
 
-    if (question.type === "order-words" || question.type === "order-shapes") {
-      const userAnswer = selectedWords[questionIndex]?.join(" ") || "";
+  if (question.type === "order-words" || question.type === "order-shapes") {
+    let userAnswer = "";
+    
+    if (question.type === "order-words") {
+      // Para palabras, usamos directamente las palabras seleccionadas
+      userAnswer = selectedWords[questionIndex]?.join(" ") || "";
+    } else if (question.type === "order-shapes") {
+      // Para figuras, convertimos los IDs a nombres en español
+      const selectedShapeNames = selectedWords[questionIndex]?.map(shapeId => {
+        const shape = SHAPE_TYPES.find(s => s.id === shapeId);
+        return shape ? shape.name : shapeId;
+      }) || [];
+      userAnswer = selectedShapeNames.join(" ");
+    }
 
-      if (!userAnswer.trim()) {
-        const newQuestionFeedback = [...questionFeedback];
-        newQuestionFeedback[questionIndex] = {
-          correct: false,
-          message: "Por favor, ordena las palabras antes de comprobar la respuesta.",
-        };
-        setQuestionFeedback(newQuestionFeedback);
-        return;
+    if (!userAnswer.trim()) {
+      const newQuestionFeedback = [...questionFeedback];
+      newQuestionFeedback[questionIndex] = {
+        correct: false,
+        message: question.type === "order-words" 
+          ? "Por favor, ordena las palabras antes de comprobar la respuesta."
+          : "Por favor, ordena las figuras antes de comprobar la respuesta.",
+      };
+      setQuestionFeedback(newQuestionFeedback);
+      return;
+    }
+
+    // Comparación mejorada: también verifica tanto IDs como nombres
+    const isCorrect = question.correctOrders?.some(
+      (validOrder) => {
+        const normalizedValidOrder = validOrder.trim().toLowerCase();
+        const normalizedUserAnswer = userAnswer.trim().toLowerCase();
+        
+        // Comparación directa
+        if (normalizedUserAnswer === normalizedValidOrder) {
+          return true;
+        }
+        
+        // Si es order-shapes, también compara con los IDs originales
+        if (question.type === "order-shapes") {
+          const userAnswerWithIds = selectedWords[questionIndex]?.join(" ").trim().toLowerCase() || "";
+          return userAnswerWithIds === normalizedValidOrder;
+        }
+        
+        return false;
       }
+    ) || false;
 
-      const isCorrect = question.correctOrders?.some(
-        (validOrder) =>
-          userAnswer.trim().toLowerCase() === validOrder.trim().toLowerCase()
-      ) || false;
+    const newQuestionFeedback = [...questionFeedback];
+    newQuestionFeedback[questionIndex] = {
+      correct: isCorrect,
+      message: isCorrect
+        ? question.feedbackCorrect || "¡Correcto!"
+        : question.feedbackIncorrect || "Incorrecto, inténtalo de nuevo.",
+    };
+    setQuestionFeedback(newQuestionFeedback);
 
+    onQuestionSolved(question.title, isCorrect);
+  }
+
+  // ... resto del código para incoherence y drawing permanece igual
+  if (question.type === "incoherence") {
+    const userAnswer = userAnswers[questionIndex]?.toLowerCase() || "";
+    
+    if (!userAnswer.trim()) {
       const newQuestionFeedback = [...questionFeedback];
       newQuestionFeedback[questionIndex] = {
-        correct: isCorrect,
-        message: isCorrect
-          ? question.feedbackCorrect || "¡Correcto!"
-          : question.feedbackIncorrect || "Incorrecto, inténtalo de nuevo.",
+        correct: false,
+        message: "Por favor, escribe tu respuesta antes de comprobar.",
       };
       setQuestionFeedback(newQuestionFeedback);
-
-      onQuestionSolved(question.title, isCorrect);
+      return;
     }
 
-    if (question.type === "incoherence") {
-      const userAnswer = userAnswers[questionIndex]?.toLowerCase() || "";
-      
-      if (!userAnswer.trim()) {
-        const newQuestionFeedback = [...questionFeedback];
-        newQuestionFeedback[questionIndex] = {
-          correct: false,
-          message: "Por favor, escribe tu respuesta antes de comprobar.",
-        };
-        setQuestionFeedback(newQuestionFeedback);
-        return;
-      }
+    const isCorrect = userAnswer.includes("salta") && userAnswer.includes("suena");
 
-      const isCorrect = userAnswer.includes("salta") && userAnswer.includes("suena");
+    const newQuestionFeedback = [...questionFeedback];
+    newQuestionFeedback[questionIndex] = {
+      correct: isCorrect,
+      message: isCorrect
+        ? question.feedbackCorrect || "¡Correcto!"
+        : question.feedbackIncorrect || "Incorrecto, inténtalo de nuevo.",
+    };
+    setQuestionFeedback(newQuestionFeedback);
 
-      const newQuestionFeedback = [...questionFeedback];
-      newQuestionFeedback[questionIndex] = {
-        correct: isCorrect,
-        message: isCorrect
-          ? question.feedbackCorrect || "¡Correcto!"
-          : question.feedbackIncorrect || "Incorrecto, inténtalo de nuevo.",
-      };
-      setQuestionFeedback(newQuestionFeedback);
+    onQuestionSolved(question.title, isCorrect);
+  }
 
-      onQuestionSolved(question.title, isCorrect);
-    }
+  if (question.type === "drawing") {
+    const newQuestionFeedback = [...questionFeedback];
+    newQuestionFeedback[questionIndex] = {
+      correct: true,
+      message: question.feedbackCorrect || "¡Excelente dibujo!",
+    };
+    setQuestionFeedback(newQuestionFeedback);
 
-    if (question.type === "drawing") {
-      const newQuestionFeedback = [...questionFeedback];
-      newQuestionFeedback[questionIndex] = {
-        correct: true,
-        message: question.feedbackCorrect || "¡Excelente dibujo!",
-      };
-      setQuestionFeedback(newQuestionFeedback);
-
-      onQuestionSolved(question.title, true);
-    }
-  };
-
+    onQuestionSolved(question.title, true);
+  }
+};
   const clearCanvas = () => {
     const canvas = document.querySelector("canvas");
     if (canvas) {
