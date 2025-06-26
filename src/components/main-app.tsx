@@ -87,10 +87,6 @@ export function MainApp() {
 }
 
 
-  const handleLogout = () => {
-    setUser(null)
-  }
-
   const handleSaveQuestion = (newQuestion: Question) => {
   setAvailableQuestions(prevQuestions => {
     if (prevQuestions.some(q => q.title === newQuestion.title)) {
@@ -158,10 +154,6 @@ return (
     <Header
       activeTab={activeTab}
       setActiveTab={setActiveTab}
-      isLoggedIn={isLoggedIn}
-      user={user!}
-      onLogin={() => setShowAuthModal(true)}
-      onLogout={handleLogout}
     />
 
     <main className="container mx-auto px-4 py-8">

@@ -3,40 +3,39 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@tailwind base;
-@tailwind components;
+
 @tailwind utilities;
 
 @layer base {
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-
+  
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
-
+  
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 173 80% 40%;
+  
+    --primary: 173 80% 40%; /* teal-600 */
     --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
+  
+    --secondary: 173 40% 90%; /* suavemente relacionado con primary */
+    --secondary-foreground: 173 80% 25%;
+  
+    --muted: 173 40% 95%;
+    --muted-foreground: 173 30% 40%;
+  
     --accent: 173 80% 96%;
     --accent-foreground: 173 80% 40%;
-
+  
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+  
+    --border: 173 30% 85%;
+    --input: 173 30% 85%;
     --ring: 173 80% 40%;
-
+  
     --radius: 0.5rem;
   }
 
@@ -120,8 +119,6 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);
   --popover: oklch(1 0 0);
@@ -151,6 +148,8 @@
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.705 0.015 286.067);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.141 0.005 285.823);
 }
 
 .dark {
