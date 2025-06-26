@@ -61,7 +61,7 @@ export function SolveQuestionsTab({
     newShuffledWords[index] = [...(question.words || [])].sort(() => Math.random() - 0.5);
     newSelectedWords[index] = [];
   } else if (question.type === "order-shapes") {
-    newShuffledWords[index] = [...(question.shapes?.map(s => s.id) || [])].sort(() => Math.random() - 0.5);
+    newShuffledWords[index] = [...(question.words || [])].sort(() => Math.random() - 0.5);
     newSelectedWords[index] = [];
   } else {
     newUserAnswers[index] = "";
