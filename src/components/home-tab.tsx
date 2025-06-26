@@ -39,7 +39,7 @@ export function HomeTab({ setActiveTab }: HomeTabProps) {
       {/* Header */}
       <div className="text-center mb-12">
         <h2 className="text-4xl font-bold text-gray-800 dark:text-white mb-4">
-          Aprende creando, resuelve jugando
+          Aprende creando, resuelve jugandoo
         </h2>
         <p className="text-xl text-gray-600 dark:text-gray-300">
           Una plataforma interactiva para crear y resolver preguntas didácticas visuales y
