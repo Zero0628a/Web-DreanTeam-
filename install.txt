@@ -1,0 +1,47 @@
+# Requisitos previos (instalar antes de continuar):
+
+1. Instalar Git
+   https://git-scm.com/downloads
+
+2. Instalar Node.js (incluye npm)
+   https://nodejs.org/
+
+   - Recomendado: Node.js versión 18 o superior
+
+---
+
+# Clonar el repositorio del proyecto
+
+git clone https://github.com/Zero0628a/Web-DreanTeam-.git
+
+cd Web-DreanTeam-
+
+---
+
+# Instalar dependencias del proyecto
+
+npm install
+
+---
+
+# Generar cliente de Prisma (base de datos)
+
+npx prisma generate
+
+---
+
+# Compilar la aplicación para producción
+
+npm run build
+
+---
+
+# Ejecutar el servidor
+
+npm run start
+
+---
+
+# La aplicación estará disponible en:
+
+http://localhost:3000
